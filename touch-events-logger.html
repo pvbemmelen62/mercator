@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<!-- https://developer.mozilla.org/en-US/docs/Web/API/Touch_events -->
+<!-- https://yari-demos.prod.mdn.mozit.cloud/en-US/docs/Web/API/Touch_events/_samples_/Example -->
+<head>
+<meta charset="utf-8">
+<title>Touch events logger</title>
+<script src="debug.js"></script>
+</head>
+<body>
+
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<h4>Log:</h4>
+<pre id="log" style="border: 1px solid #ccc;"></pre>
+
+<script>
+
+var debug;
+
+function startup() {
+  debug = Debug.createFunction("log", true, 50);
+  var el = document.getElementById("canvas");
+  el.addEventListener("touchstart", handleStart, false);
+  el.addEventListener("touchend", handleEnd, false);
+  el.addEventListener("touchcancel", handleCancel, false);
+  el.addEventListener("touchmove", handleMove, false);
+}
+
+document.addEventListener("DOMContentLoaded", startup);
+var ongoingTouches = [];
+
+function handleStart(evt) {
+  evt.preventDefault();
+  var el = document.getElementById("canvas");
+  var ctx = el.getContext("2d");
+  var touches = evt.changedTouches;
+
+  for (var i = 0; i < touches.length; i++) {
+    debug("touchstart:" + i + "...");
+    ongoingTouches.push(copyTouch(touches[i]));
+  }
+}
+
+function handleMove(evt) {
+  evt.preventDefault();
+  var el = document.getElementById("canvas");
+  var ctx = el.getContext("2d");
+  var touches = evt.changedTouches;
+
+  for (var i = 0; i < touches.length; i++) {
+    var idx = ongoingTouchIndexById(touches[i].identifier);
+
+    if (idx >= 0) {
+      debug("touchmove " + idx + "  "  + touches[i].pageX + ", " + touches[i].pageY);
+      ongoingTouches.splice(idx, 1, copyTouch(touches[i]));  // swap in the new touch record
+    } else {
+      debug("can't figure out which touch to continue");
+    }
+  }
+}
+
+function handleEnd(evt) {
+  evt.preventDefault();
+  debug("touchend");
+  var el = document.getElementById("canvas");
+  var ctx = el.getContext("2d");
+  var touches = evt.changedTouches;
+
+  for (var i = 0; i < touches.length; i++) {
+    var idx = ongoingTouchIndexById(touches[i].identifier);
+
+    if (idx >= 0) {
+      debug("touchend " + idx + "  "  + touches[i].pageX + ", " + touches[i].pageY);
+      ongoingTouches.splice(idx, 1);  // remove it; we're done
+    } else {
+      debug("can't figure out which touch to end");
+    }
+  }
+}
+
+function handleCancel(evt) {
+  evt.preventDefault();
+  debug("touchcancel.");
+  var touches = evt.changedTouches;
+
+  for (var i = 0; i < touches.length; i++) {
+    var idx = ongoingTouchIndexById(touches[i].identifier);
+    debug("touchcancel " + idx + "  "  + touches[i].pageX + ", " + touches[i].pageY);
+    ongoingTouches.splice(idx, 1);  // remove it; we're done
+  }
+}
+
+function copyTouch({ identifier, pageX, pageY }) {
+  return { identifier, pageX, pageY };
+}
+function ongoingTouchIndexById(idToFind) {
+  for (var i = 0; i < ongoingTouches.length; i++) {
+    var id = ongoingTouches[i].identifier;
+
+    if (id == idToFind) {
+      return i;
+    }
+  }
+  return -1;    // not found
+}
+
+</script>
+</body>
+</html>

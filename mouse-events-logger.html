@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mouse events logger</title>
+<script src="debug.js"></script>
+</head>
+<body>
+
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<h4>Log:</h4>
+<pre id="log" style="border: 1px solid #ccc;"></pre>
+
+<script>
+
+var debug;
+
+function startup() {
+  debug = Debug.createFunction("log", true, 10);
+  var el = document.getElementById("canvas");
+  el.addEventListener("click", handleEvent, false);
+  el.addEventListener("dblclick", handleEvent, false);
+  el.addEventListener("mousedown", handleEvent, false);
+  el.addEventListener("mouseup", handleEvent, false);
+  el.addEventListener("mouseover", handleEvent, false);
+  el.addEventListener("mousemove", handleEvent, false);
+}
+
+document.addEventListener("DOMContentLoaded", startup);
+var ongoingTouches = [];
+
+function handleEvent(e) {
+  var { type, screenX, screenY, pageX, pageY, clientX, clientY, x, y, offsetX, offsetY} = e;
+  debug(JSON.stringify(
+    {"type": type, "screenX": screenX, "screenY": screenY, "pageX": pageX, "pageY": pageY, "clientX": clientX, "clientY": clientY,
+     "x": x, "y": y, "offsetX": offsetX, "offsetY": offsetY}
+  ));
+}
+
+</script>
+</body>
+</html>
