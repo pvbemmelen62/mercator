@@ -14,7 +14,8 @@ canvas {
 <script src="grid.js"></script>
 <script src="util.js"></script>
 <script src="debug.js"></script>
-<!-- <script src="course.js"></script> -->
+<script src="course.js"></script>
+<script src="planar.js"></script>
 </head>
 <body onload="myOnLoad()">
 <h1>Mercator Demo</h1>
@@ -33,6 +34,7 @@ App.prototype = {
     var ctx = [];
     var grid = [];
     var course = [];
+    var state = [];
   
     for(var i of [0,1]) {
       canvas[i] = document.getElementById("canvas"+i);
@@ -54,6 +56,7 @@ App.prototype = {
       var wld2vp = Matrix2DST.fromPoints([0,-90],[0,0],[360,90],[w-2*mx,h-2*my]);
       //wld2vp.verifyPoints("wld2vp", [0,-90],[0,0],[360,90],[w-2*mx,h-2*my]);
       var wld2cv = vp2cv.multiply(wld2vp);
+      var cv2wld = wld2cv.inverse();
   
   // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Applying_styles_and_colors
   
@@ -82,41 +85,88 @@ App.prototype = {
       }
       grid[i] = new Grid(wld2cv,xGrid,yGrid,xLabels,yLabels);
 
-      //course[0] = new Course(0, 0, 30, 50, wld2cv, true);
-      //course[1] = new Course(0, 0, 30, 50, wld2cv, false);
+      //course[0] = new Course(0, 0, 30, 50, wld2cv, cv2wld);
+      course[1] = new Course(0, 0, 30, 50, wld2cv, cv2wld);
   
       this.canvas = canvas;
       this.border = border;
       this.grid = grid;
-      //this.course = course;
+      this.course = course;
       this.ctx = ctx;
+      this.wld2cv = wld2cv;
+      this.cv2wld = cv2wld;
+      this.state = state;
+    }
+    for(var i of [0,1]) {
+      var useCapture = false;
+      canvas[i].addEventListener("click", myMouseEventListener, useCapture);
+      canvas[i].addEventListener("mouseup", myMouseEventListener, useCapture);
+      canvas[i].addEventListener("mousedown", myMouseEventListener, useCapture);
+      canvas[i].addEventListener("mousemove", myMouseEventListener, useCapture);
     }
   },
   draw : function() {
     for(var i of [0,1]) {
       this.border.draw(this.ctx[i]);
       this.grid[i].draw(this.ctx[i]);
-      //this.course[i].draw(this.ctx[i]);
+    }
+    this.course[1].draw(this.ctx[i]);
+  },
+  handleMouse1 : function(e) {
+    var state = this.state;
+    if("mousedown" == e.type) {
+      //debug(`evaluate pick ${e.x}, ${e.y}`);
+      var hits = this.course[1].pick(e);
+      if(hits) {
+        debug("hits: " + hits);
+        if(hits.length > 1) {
+          debug("too many hits: " + hits);
+        }
+        if(state.length > 0) {
+          debug("hit in unexpected state: " + state);
+        }
+        state.push("mousedown");
+        state.push(hits[0]);
+      }
+    }
+    else if("mousemove" == e.type) {
+      if(state.length == 0) {
+        return;
+      }
+      this.course[1].move(this.state[1], e);
+      this.draw();
     }
   }
 };
-function myMouseEventListener(e) {
-  debug(JSON.stringify(
-    [e.x, e.y, e.type, e.button] 
-  ));
+
+
+// https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element
+//
+function getCanvasXY(canvas, event) {
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    return [x,y];
 }
+function myMouseEventListener(e) {
+  var app = window.app;
+  if( ! (e.target == app.canvas[0] || e.target == app.canvas[1] ) ) {
+    return;
+  }
+  var cxy = getCanvasXY(e.target, e);
+  var myE = {x: cxy[0], y: cxy[1], type: e.type, button: e.button, target: e.target};
+  //debug(JSON.stringify(myE));
+  var app = window.app;
+  if(e.target == app.canvas[1]) {
+    app.handleMouse1(myE);
+  }
+}
+
 function myOnLoad() {
   window.app = new App();
   var app = window.app;
   app.init();
   app.draw();
-  for(canvas of app.canvas) {
-    var useCapture = false;
-    canvas.addEventListener("click", myMouseEventListener, useCapture);
-    canvas.addEventListener("mouseup", myMouseEventListener, useCapture);
-    canvas.addEventListener("mousedown", myMouseEventListener, useCapture);
-    canvas.addEventListener("mousemove", myMouseEventListener, useCapture);
-  }
 }
 </script>
 </body>
