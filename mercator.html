@@ -107,6 +107,9 @@ App.prototype = {
   },
   draw : function() {
     for(var i of [0,1]) {
+      this.ctx[i].clearRect(0, 0, this.canvas[i].width, this.canvas[i].height);
+    }
+    for(var i of [0,1]) {
       this.border.draw(this.ctx[i]);
       this.grid[i].draw(this.ctx[i]);
     }
@@ -135,6 +138,9 @@ App.prototype = {
       }
       this.course[1].move(this.state[1], e);
       this.draw();
+    }
+    else if("mouseup" == e.type) {
+      state.length = 0;
     }
   }
 };
