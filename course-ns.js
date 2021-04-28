@@ -1,5 +1,8 @@
 
-function Course(phi0, theta0, phi1, theta1, wld2cv, cv2wld) {
+/* Course Naive Straight
+ * A straight line on the naive map
+ */
+function CourseNS(phi0, theta0, phi1, theta1, wld2cv, cv2wld) {
   this.wld2cv = wld2cv;
   this.phi0 = phi0;
   this.theta0 = theta0;
@@ -9,7 +12,7 @@ function Course(phi0, theta0, phi1, theta1, wld2cv, cv2wld) {
   this.cv2wld = cv2wld;
   this.arcRadius = 4;
 }
-Course.prototype = {
+CourseNS.prototype = {
   draw : function(ctx) {
     var {wld2cv,phi0,theta0,phi1,theta1} = this;
     if(false) {

@@ -14,7 +14,7 @@ canvas {
 <script src="grid.js"></script>
 <script src="util.js"></script>
 <script src="debug.js"></script>
-<script src="course.js"></script>
+<script src="course-ns.js"></script>
 <script src="planar.js"></script>
 </head>
 <body onload="myOnLoad()">
@@ -86,7 +86,7 @@ App.prototype = {
       grid[i] = new Grid(wld2cv,xGrid,yGrid,xLabels,yLabels);
 
       //course[0] = new Course(0, 0, 30, 50, wld2cv, cv2wld);
-      course[1] = new Course(0, 0, 30, 50, wld2cv, cv2wld);
+      course[1] = new CourseNS(0, 0, 30, 50, wld2cv, cv2wld);
   
       this.canvas = canvas;
       this.border = border;
