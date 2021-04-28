@@ -30,6 +30,7 @@ Grid.prototype.draw = function(ctx) {
   ctx.font = "15px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
+  ctx.fillStyle = "black";
   for(var xLabel of xLabels) {
     ctx.beginPath();
     var p = wld2pix.map([xLabel.x,-90]);
