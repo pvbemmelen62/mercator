@@ -15,36 +15,35 @@ function CourseNS(phi0, theta0, phi1, theta1, wld2cv, cv2wld) {
 CourseNS.prototype = {
   draw : function(ctx) {
     var {wld2cv,phi0,theta0,phi1,theta1} = this;
-    if(false) {
-    }
-    else {
-      var p0 = wld2cv.map(phi0,theta0);
-      var p1 = wld2cv.map(phi1,theta1);
-      ctx.beginPath();
-      ctx.moveTo(p0[0], p0[1]);
-      ctx.lineTo(p1[0], p1[1]);
-      ctx.strokeStyle = "#000000";
-      ctx.stroke();
+    var p0 = wld2cv.map(phi0,theta0);
+    var p1 = wld2cv.map(phi1,theta1);
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]);
+    ctx.lineTo(p1[0], p1[1]);
+    ctx.strokeStyle = "#000000";
+    ctx.stroke();
 
-      for(var p of [p0,p1]) {
-        ctx.beginPath();
-        ctx.arc(p[0], p[1], this.arcRadius, 0, 2 * Math.PI, false);
-        ctx.fillStyle = "red";
-        ctx.fill();
-      }
+    for(var p of [p0,p1]) {
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], this.arcRadius, 0, 2 * Math.PI, false);
+      ctx.fillStyle = "red";
+      ctx.fill();
     }
   },
-  pick : function(e) {
+  /* wld: world coordinates, array with x and y value.
+   * for naive plot x,y represent phi,theta.
+   */
+  hit : function(wld) {
     var hits = [];
     var {wld2cv,phi0,theta0,phi1,theta1} = this;
-    var ps = [wld2cv.map(phi0,theta0), wld2cv.map(phi1,theta1)];
+    var ps = [[phi0,theta0], [phi1,theta1]];
     //debug(`p0: ${ps[0]}, p1: ${ps[1]}`);
     for(var i of [0,1]) {
-      if(Planar.closerThanDistanceSqr(e.x,e.y,ps[i][0],ps[i][1],100)) {
+      if(Planar.closerThanDistanceSqr(wld[0],wld[1],ps[i][0],ps[i][1],100)) {
         hits.push("p"+i);
       }
     }
-    return hits.length > 0 ? hits : null;
+    return hits;
   },
   move : function(point, e) {
     var [phi,theta] = this.cv2wld.map(e.x,e.y);

@@ -15,6 +15,8 @@ canvas {
 <script src="util.js"></script>
 <script src="debug.js"></script>
 <script src="course-ns.js"></script>
+<script src="plot-naive.js"></script>
+<script src="plot-mercator.js"></script>
 <script src="planar.js"></script>
 </head>
 <body onload="myOnLoad()">
@@ -27,144 +29,88 @@ let sf = JSON.stringify;
 let debug = Debug.createFunction("preDebug", true, 40);
 
 function App() {
+  this.canvases = [];
+  this.plots = [];
+  // state: one of { "clear", "naiveP0", "naiveP1", "mercatorP0", "mercatorP1" }
+  // I will used "armed" to refer to any of the non-clear states.
+  this.state = "clear";
 }
 App.prototype = {
   init : function() {
-    var canvas = [];
-    var ctx = [];
-    var grid = [];
-    var course = [];
-    var state = [];
   
     for(var i of [0,1]) {
-      canvas[i] = document.getElementById("canvas"+i);
-      if(!canvas[i].getContext) {
-        alert(`Error: no canvas[${i}].getContext`);
+      var canvas = document.getElementById("canvas"+i);
+      if(!canvas.getContext) {
+        alert(`Error: no canvas.getContext`);
         return;
       }
-      ctx[i] = canvas[i].getContext('2d');
-  
-      var w = canvas[i].width;
-      var h = canvas[i].height;
-      var mx = 100; // margin x
-      var my = 50;
-  // canvas pixels
-  // viewport pixels
-  // world coordinates
-      var vp2cv = Matrix2DST.fromPoints([0,0],[mx,h-my],[w-2*mx,h-2*my],[w-mx,my]);
-      //vp2cv.verifyPoints("vp2cv", [0,0],[mx,h-my],[w-2*mx,h-2*my],[w-mx,my]);
-      var wld2vp = Matrix2DST.fromPoints([0,-90],[0,0],[360,90],[w-2*mx,h-2*my]);
-      //wld2vp.verifyPoints("wld2vp", [0,-90],[0,0],[360,90],[w-2*mx,h-2*my]);
-      var wld2cv = vp2cv.multiply(wld2vp);
-      var cv2wld = wld2cv.inverse();
-  
-  // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Applying_styles_and_colors
-  
-      ctx[i].lineWidth = 1;
-      ctx[i].setLineDash([]);
-      ctx[i].strokeStyle = 'rgba(50, 50, 50, 1.0)';
-  
-      // border of graph
-      var xGrid  = range(0,360,360);
-      var yGrid = range(-90,90,180);
-      var xLabels  = [];
-      var yLabels = [];
-      var border = new Grid(wld2cv,xGrid,yGrid,xLabels,yLabels);
-  
-      if(i==0) {
-        var xGrid  = range(0,360,30);
-        var yGrid = range(-90,90,30).map(y => Mercator.f(Mercator.d2r*y)*Mercator.r2d);
-        var xLabels  = range(0,360,60).map(x => {return {x: x, text: x.toString()}; });
-        var yLabels = range(-90,90,30).map(y => {return {y: Mercator.f(Mercator.d2r*y)*Mercator.r2d, text: y.toString()}; });
-      }
+      this.canvases.push(canvas);
+      var plot = i==0 ? new PlotMercator(canvas) : new PlotNaive(canvas);
       if(i==1) {
-        var xGrid  = range(0,360,30);
-        var yGrid = range(-90,90,30);
-        var xLabels  = range(0,360,60).map(x => {return {x:x, text: x.toString()}; });
-        var yLabels = range(-90,90,30).map(y => {return {y:y, text: y.toString()}; });
+        let phi0=0, theta0=0, phi1=30, theta1=60;
+        plot.addCourse(new CourseNS(phi0,theta0,phi1,theta1,plot.wld2cv,plot.cv2wld));
       }
-      grid[i] = new Grid(wld2cv,xGrid,yGrid,xLabels,yLabels);
+      this.plots.push(plot);
+    }
 
-      //course[0] = new Course(0, 0, 30, 50, wld2cv, cv2wld);
-      course[1] = new CourseNS(0, 0, 30, 50, wld2cv, cv2wld);
-  
-      this.canvas = canvas;
-      this.border = border;
-      this.grid = grid;
-      this.course = course;
-      this.ctx = ctx;
-      this.wld2cv = wld2cv;
-      this.cv2wld = cv2wld;
-      this.state = state;
-    }
-    for(var i of [0,1]) {
-      var useCapture = false;
-      canvas[i].addEventListener("click", myMouseEventListener, useCapture);
-      canvas[i].addEventListener("mouseup", myMouseEventListener, useCapture);
-      canvas[i].addEventListener("mousedown", myMouseEventListener, useCapture);
-      canvas[i].addEventListener("mousemove", myMouseEventListener, useCapture);
-    }
+    var body = document.getElementsByTagName("body")[0];
+    body.addEventListener("mousedown", e => app.handleMouseEvent(e));
+    body.addEventListener("mouseup", e => app.handleMouseEvent(e));
+    body.addEventListener("mousemove", e => app.handleMouseEvent(e));
   },
   draw : function() {
-    for(var i of [0,1]) {
-      this.ctx[i].clearRect(0, 0, this.canvas[i].width, this.canvas[i].height);
+    for(plot of this.plots) {
+      plot.draw();
     }
-    for(var i of [0,1]) {
-      this.border.draw(this.ctx[i]);
-      this.grid[i].draw(this.ctx[i]);
-    }
-    this.course[1].draw(this.ctx[i]);
   },
-  handleMouse1 : function(e) {
-    var state = this.state;
+  handleMouseEvent: function(e) {
+    var {state} = this;
+    // A Finite State Automaton implemented using if-else .
     if("mousedown" == e.type) {
-      //debug(`evaluate pick ${e.x}, ${e.y}`);
-      var hits = this.course[1].pick(e);
-      if(hits) {
-        debug("hits: " + hits);
-        if(hits.length > 1) {
-          debug("too many hits: " + hits);
-        }
-        if(state.length > 0) {
-          debug("hit in unexpected state: " + state);
-        }
-        state.push("mousedown");
-        state.push(hits[0]);
+      if(state == "clear") {
+        this.handleClearMouseDown(e);
+      }
+      else {
+        debug("mousedown while armed: ignore.");
+      }
+    }
+    else if("mouseup" == e.type) {
+      if(state == "clear") {
+        debug("mouseup in state clear");
+      }
+      else {
+        this.handleArmedMouseUp(e);
       }
     }
     else if("mousemove" == e.type) {
-      if(state.length == 0) {
-        return;
+      if(state == "clear") {
       }
-      this.course[1].move(this.state[1], e);
-      this.draw();
+      else if(state == "naiveP0" || state == "naiveP1") {
+        this.handleNaiveMouseMove(e);
+      }
+      else if(state == "mercatorP0" || state == "mercatorP1") {
+        this.handleMercatorMouseMove(e);
+      }
     }
-    else if("mouseup" == e.type) {
-      state.length = 0;
+  },
+  handleClearMouseDown(e) {
+    if(e.target == this.canvases[1]) {
+      let canvas = this.canvases[1];
+      let plot = this.plots[1];
+      let hits = this.plots[1].hit(e);
+      if(hits.length>0) {
+        debug(sf(hits));
+      }
     }
-  }
-};
-
-
-// https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element
-//
-function getCanvasXY(canvas, event) {
-    const rect = canvas.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-    return [x,y];
-}
-function myMouseEventListener(e) {
-  var app = window.app;
-  if( ! (e.target == app.canvas[0] || e.target == app.canvas[1] ) ) {
-    return;
-  }
-  var cxy = getCanvasXY(e.target, e);
-  var myE = {x: cxy[0], y: cxy[1], type: e.type, button: e.button, target: e.target};
-  //debug(JSON.stringify(myE));
-  var app = window.app;
-  if(e.target == app.canvas[1]) {
-    app.handleMouse1(myE);
+  },
+  handleArmedMouseDown(e) {
+    // TODO
+  },
+  handleNaiveMouseMove(e) {
+    // TODO
+  },
+  handleMercatorMouseMove(e) {
+    // TODO
   }
 }
 
