@@ -1,4 +1,4 @@
-# mercator
+
 Mercator projection: horizontal longitude, vertical function of latitude ; in javascript.
 
 Work in progress.
@@ -10,5 +10,3 @@ The function f() for the mercator map, is such that it gives the mercator map th
 that a straight line on the map, corresponds to a course on the globe that has a constant compass angle.
 
 The main file is mercator.html ; it includes the others.
-
-

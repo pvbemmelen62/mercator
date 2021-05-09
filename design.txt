@@ -1,0 +1,38 @@
+
+Class / Responsibilities / Collaborators
+
+<<Class>>
+App
+--------------------------------------------------------------------------
+<<Responsibilities>>                                     <<Collaborators>>
+listen for mouse events, and depending on hit state:
+  update hit state
+  asks plots for any hits
+  tells courses in plots to change coordinates
+--------------------------------------------------------------------------
+
+
+<<Class>>
+PlotNaive
+--------------------------------------------------------------------------
+<<Responsibilities>>                                     <<Collaborators>>
+draw in canvas                                           Course
+report various coord transforms
+allows adding courses
+allows deleting courses
+return array of contained courses
+report hits for e.x, e.y
+--------------------------------------------------------------------------
+
+
+<<class>>
+Course
+--------------------------------------------------------------------------
+<<Responsibilities>>                                     <<Collaborators>>
+draw in canvas
+return wld.x wld.y for p0, p1 .
+move p0 or p1
+report hits for wld.x, wld.y
+  "p0", "p1"
+--------------------------------------------------------------------------
+
