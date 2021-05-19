@@ -1,0 +1,25 @@
+
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="Linear.js"></script>
+<script src="debug.js"></script>
+</head>
+<body onload="myOnLoad()">
+<pre id="preDebug"></pre>
+<script>
+let debug = Debug.createFunction("preDebug", true, 40);
+
+function myOnLoad() {
+  var linear = new Linear(0,0,30,60);
+  var liter = linear.iterator(10);
+  var p = liter.next().value;
+  debug("first: " + p);
+  for(var p of liter) {
+    debug(p);
+  }
+}
+</script>
+</body>
+</html>
+

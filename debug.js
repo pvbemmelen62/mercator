@@ -19,13 +19,13 @@ function Debug(id, atTop, max) {
  */
 Debug.createFunction = function(id, atTop, max) {
   // too complex maybe ?
-    return (function() {
-      var _id = id;
-      var _atTop = atTop;
-      var _max = max; 
-      var _debug = new Debug(_id, _atTop, _max);
-      return function(s) { _debug.debug(s) };
-    }());
+  return (function() {
+    var _id = id;
+    var _atTop = atTop;
+    var _max = max; 
+    var _debug = new Debug(_id, _atTop, _max);
+    return function(s) { _debug.debug(s) };
+  }());
 }
 Debug.prototype = {
   debug : function (s) {

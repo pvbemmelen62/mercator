@@ -1,27 +1,27 @@
 
-function Mercator(phi0,theta0,phi1,theta1) {
-  this.phi0 = phi0;
-  this.theta0 = theta0;
-  this.phi1 = phi1;
-  this.theta1 = theta1;
+function Mercator(lon0,lat0,lon1,lat1) {
+  this.lon0 = lon0;
+  this.lat0 = lat0;
+  this.lon1 = lon1;
+  this.lat1 = lat1;
   // compass angle:
   var M = Mercator;
-  this.slope = (M.f(theta1) - M.f(theta0)) / (phi1 - phi0);
+  this.slope = (M.f(lat1) - M.f(lat0)) / (lon1 - lon0);
 }
 
-Mercator.fromDegrees = function(phi0,theta0,phi1,theta1) {
+Mercator.fromDegrees = function(lon0,lat0,lon1,lat1) {
   var M = Mercator;
-  return new Mercator(phi0*M.d2r,theta0*M.d2r,phi1*M.d2r,theta1*M.d2r);
+  return new Mercator(lon0*M.d2r,lat0*M.d2r,lon1*M.d2r,lat1*M.d2r);
 }
 
 Mercator.d2r = Math.PI*2/360; // radians = d2r * degrees
 Mercator.r2d = 1/Mercator.d2r; // degrees = r2d * radians
-Mercator.f = function(theta) {
-  var rv = Math.log((1/Math.cos(theta)) + Math.tan(theta));
+Mercator.f = function(lat) {
+  var rv = Math.log((1/Math.cos(lat)) + Math.tan(lat));
   return rv;
 }
-Mercator.fDeri = function(theta) {
-  var rv = 1/Math.cos(theta);
+Mercator.fDeri = function(lat) {
+  var rv = 1/Math.cos(lat);
   return rv;
 }
 Mercator.fInv = function(y) {
@@ -33,18 +33,18 @@ Mercator.fInv = function(y) {
 
 Mercator.prototype = {
 
-  phiFromTheta : function(theta) {
+  lonFromLat : function(lat) {
     var M = Mercator;
-    // (f(theta)-f(theta0)) / (phi - phi0) = slope
-    var phi = this.phi0 + (M.f(theta)-M.f(this.theta0))/this.slope;
-    return phi;
+    // (f(lat)-f(lat0)) / (lon - lon0) = slope
+    var lon = this.lon0 + (M.f(lat)-M.f(this.lat0))/this.slope;
+    return lon;
   },
-  thetaFromPhi : function(phi) {
+  latFromLon : function(lon) {
     var M = Mercator;
-    // (f(theta)-f(theta0)) / (phi - phi0) = slope
-    var fTheta = M.f(this.theta0) + (phi - this.phi0)*this.slope;
-    var theta = M.fInv(fTheta);
-    return theta;
+    // (f(lat)-f(lat0)) / (lon - lon0) = slope
+    var fLat = M.f(this.lat0) + (lon - this.lon0)*this.slope;
+    var lat = M.fInv(fLat);
+    return lat;
   }
 }
 

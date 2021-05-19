@@ -9,15 +9,20 @@ canvas {
   border-color: black;
 }
 </style>
-<script src="mercator.js"></script>
-<script src="matrix2dst.js"></script>
-<script src="grid.js"></script>
+<script src="Mercator.js"></script>
+<script src="Identity.js"></script>
+<script src="Matrix2dst.js"></script>
+<script src="Grid.js"></script>
 <script src="util.js"></script>
-<script src="debug.js"></script>
-<script src="course-ns.js"></script>
-<script src="plot-naive.js"></script>
-<script src="plot-mercator.js"></script>
-<script src="planar.js"></script>
+<script src="Debug.js"></script>
+<script src="CourseNaiveStraight.js"></script>
+<script src="CourseNaiveCurved.js"></script>
+<script src="CourseMercatorStraight.js"></script>
+<script src="CourseMercatorCurved.js"></script>
+<script src="PlotNaive.js"></script>
+<script src="PlotMercator.js"></script>
+<script src="Planar.js"></script>
+<script src="Linear.js"></script>
 </head>
 <body onload="myOnLoad()">
 <h1>Mercator Demo</h1>
@@ -31,86 +36,62 @@ let debug = Debug.createFunction("preDebug", true, 40);
 function App() {
   this.canvases = [];
   this.plots = [];
-  // state: one of { "clear", "naiveP0", "naiveP1", "mercatorP0", "mercatorP1" }
-  // I will used "armed" to refer to any of the non-clear states.
-  this.state = "clear";
+  // hits: array of zero or more {course: course, hit: location} ,
+  // with location one of "p0", "p1" .
+  this.hits = [];
+  this.ll0 = {lon:0,lat:0};
+  this.ll1 = {lon:30,lat:60};
+  this.plotMercator = null;
+  this.plotNaive = null;
 }
 App.prototype = {
   init : function() {
   
-    for(var i of [0,1]) {
-      var canvas = document.getElementById("canvas"+i);
-      if(!canvas.getContext) {
-        alert(`Error: no canvas.getContext`);
-        return;
-      }
-      this.canvases.push(canvas);
-      var plot = i==0 ? new PlotMercator(canvas) : new PlotNaive(canvas);
-      if(i==1) {
-        let phi0=0, theta0=0, phi1=30, theta1=60;
-        plot.addCourse(new CourseNS(phi0,theta0,phi1,theta1,plot.wld2cv,plot.cv2wld));
-      }
-      this.plots.push(plot);
+    var canvas0 = document.getElementById("canvas0");
+    if(!canvas0.getContext) {
+      alert(`Error: no canvas.getContext`);
+      return;
     }
+    var canvas1 = document.getElementById("canvas1");
 
-    var body = document.getElementsByTagName("body")[0];
-    body.addEventListener("mousedown", e => app.handleMouseEvent(e));
-    body.addEventListener("mouseup", e => app.handleMouseEvent(e));
-    body.addEventListener("mousemove", e => app.handleMouseEvent(e));
+    this.plotMercator = new PlotMercator(canvas0, this.ll0, this.ll1);
+    this.plotNaive = new PlotNaive(canvas1, this.ll0, this.ll1);
   },
   draw : function() {
-    for(plot of this.plots) {
-      plot.draw();
-    }
+    this.plotMercator.draw();
+    this.plotNaive.draw();
   },
-  handleMouseEvent: function(e) {
-    var {state} = this;
-    // A Finite State Automaton implemented using if-else .
-    if("mousedown" == e.type) {
-      if(state == "clear") {
-        this.handleClearMouseDown(e);
-      }
-      else {
-        debug("mousedown while armed: ignore.");
-      }
+  handleMouseDown: function(e) {
+    if(this.hits.length > 0) {
+      debug("mousedown while hits: ignore.");
+      return;
     }
-    else if("mouseup" == e.type) {
-      if(state == "clear") {
-        debug("mouseup in state clear");
-      }
-      else {
-        this.handleArmedMouseUp(e);
-      }
-    }
-    else if("mousemove" == e.type) {
-      if(state == "clear") {
-      }
-      else if(state == "naiveP0" || state == "naiveP1") {
-        this.handleNaiveMouseMove(e);
-      }
-      else if(state == "mercatorP0" || state == "mercatorP1") {
-        this.handleMercatorMouseMove(e);
-      }
-    }
-  },
-  handleClearMouseDown(e) {
     if(e.target == this.canvases[1]) {
       let canvas = this.canvases[1];
       let plot = this.plots[1];
-      let hits = this.plots[1].hit(e);
-      if(hits.length>0) {
-        debug(sf(hits));
-      }
+      let hits = this.plots[1].hits(e);
+      this.hits.push(...hits);
+      debug(sf(this.hits));
     }
   },
-  handleArmedMouseDown(e) {
-    // TODO
+  handleMouseMove(e) {
+    if(!this.hit) {
+      return;
+    }
+    let hit = this.hits[0];
+    let location = hit.location;
+    let course = hit.course;
+    course.move(location, e);
   },
-  handleNaiveMouseMove(e) {
-    // TODO
-  },
-  handleMercatorMouseMove(e) {
-    // TODO
+  handleMouseUp(e) {
+    if(this.hits.length > 0) {
+      this.hits.length = 0;
+    }
+    debug(sf(this.hits));
+    //if(e.target == this.canvases[1]) {
+    //  let canvas = this.canvases[1];
+    //  this.hits.length = 0;
+    //}
   }
 }
 
