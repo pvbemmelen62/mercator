@@ -2,32 +2,34 @@
 /* Course Mercator Curved
  * A curved line on mercator map, that has as dual a straight line on the naive map.
  */
-function CourseMercatorCurved(ll0,ll1,lfl2cv) {
+function CourseMercatorCurved(ll0,ll1,lfl2cv,style) {
   this.ll0 = ll0;
   this.ll1 = ll1;
   this.lfl2cv = lfl2cv;
+  this.style = style || { strokeStyle: "#000000" , lineDash: [] };
 }
 CourseMercatorCurved.prototype = {
   draw : function(ctx) {
     const arcRadius = 4;
     var {ll0,ll1,lfl2cv} = this;
-    var f = x => x;
     var _this = {f: Mercator.f, fInv: Mercator.fInv};
     var _that = {f: Identity.f, fInv: Identity.fInv};
 
     var lineIter = new Linear(ll0.lon,_that.f(ll0.lat),ll1.lon,_that.f(ll1.lat)).iterator(10);
     ctx.beginPath();
     var lfl = lineIter.next().value;
-
-    var ll = _that.fInv(lfl[0],lfl[1]);
-    var cv = lfl2cv.map(ll[0], _this.f(ll[1]));
+    var lon = lfl[0];
+    var lat = _that.fInv(lfl[1]);
+    var cv = lfl2cv.map(lon, _this.f(lat));
     ctx.moveTo(cv[0], cv[1]);
     for(var lfl of lineIter) {
-      ll = _that.fInv(lfl[0],lfl[1]);
-      cv = lfl2cv.map(ll[0], _this.f(ll[1]));
+      lon = lfl[0];
+      lat = _that.fInv(lfl[1]);
+      cv = lfl2cv.map(lon, _this.f(lat));
       ctx.lineTo(cv[0], cv[1]);
     }
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = this.style.strokeStyle;
+    ctx.setLineDash(this.style.lineDash);
     ctx.stroke();
 
     var cv0 = lfl2cv.map(ll0.lon, _this.f(ll0.lat));

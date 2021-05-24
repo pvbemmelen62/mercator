@@ -84,14 +84,19 @@ function PlotNaive(canvas, ll0, ll1) {
   var yGrid = range(-90,90,30).map(y => f(y));
   var xLabels  = range(0,360,60).map(x => {return {x: x, text: x.toString()}; });
   var yLabels = range(-90,90,30).map(y => {return {y: f(y), text: y.toString()}; });
-
   this.grid = new Grid(lfl2cv,xGrid,yGrid,xLabels,yLabels);
 
-  this.courses.push(new CourseNaiveStraight(ll0,ll1,lfl2cv));
-  this.courses.push(new CourseNaiveCurved(ll0,ll1,lfl2cv));
+  var styles = [
+    {strokeStyle: "#000000", lineDash: []},
+    {strokeStyle: "#770000", lineDash: [10,10]},
+    {strokeStyle: "#007700", lineDash: [15, 3, 3, 3]}
+  ];
+
+  this.courses.push(new CourseNaiveStraight(ll0,ll1,lfl2cv,styles[0]));
+  this.courses.push(new CourseNaiveCurved(ll0,ll1,lfl2cv,styles[1]));
   var ll2 = this.calcLl2();
   this.ll2 = ll2;
-  this.courses.push(new CourseNaiveCurved(ll0,ll2,lfl2cv));
+  this.courses.push(new CourseNaiveCurved(ll0,ll2,lfl2cv,styles[2]));
 
   this.f = f;
   this.lfl2cv = lfl2cv;
@@ -111,24 +116,23 @@ PlotNaive.prototype = {
   },
   calcLl2 : function() {
     var {ll0,ll1} = this;
-    var tangent = (ll1.lat - ll0.lat)/(ll1.lon - ll0.lon);
-    // Solve for lfl2.lon, lfl2.flat:
-    // Short: lon2 =def= lfl2.lon , flat2 =def= lfl2.flat
-    // (flat2 - flat0) / (lon2 - lon0) = tangent
-    // dist(lfl0,lfl2) = dist(lfl0,lfl1)
     var lon0 = ll0.lon;
-    var flat0 = Mercator.f(ll0.lat);
+    var lat0 = ll0.lat;
     var lon1 = ll1.lon;
-    var flat1 = Mercator.f(ll1.lat);
-    var lon2;
-    var flat2;
-    var angle = Math.atan2(flat2-flat0, lon2-lon0);
-    // Vector (cos,sin) points from lon0,flat0  in direction of lon2,flat2 .
+    var lat1 = ll1.lat;
+    var angle = Math.atan2(lat1-lat0, lon1-lon0);
     var sqr = x => x*x;
-    var dist = Math.sqrt(sqr(lon1-lon0)+sqr(flat1-flat0));
-    lon2 = lon0 + dist*Math.cos(angle);
-    flat2 = flat0 + dist*Math.sin(angle);
-    var lat2 = Mercator.fInv(flat2);
+    var {f, fInv} = Mercator;
+    // TODO kijk of ik een betere dist kan verzinnen
+    var distN = Math.sqrt(sqr(lon1-lon0)+sqr(lat1-lat0));
+    var distM = Math.sqrt(sqr(lon1-lon0)+sqr(f(lat1)-f(lat0)));
+    var dist = Math.max(distN,distM);
+    // Vector (cos,sin) points from lon0,flat0  in direction of lon2,flat2 .
+    var lon2 = lon0 + dist*Math.cos(angle);
+    var flat2 = f(ll0.lat) + dist*Math.sin(angle);
+    var lat2 = fInv(flat2);
+    var dist2 = Math.sqrt(sqr(lon2-lon0)+sqr(f(lat2)-f(lat0)));
+    //debug(`distN=${distN}, distM=${distM}, dist2=${dist2}`);
     return {lon: lon2, lat: lat2};
   },
   draw : function() {

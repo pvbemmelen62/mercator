@@ -2,10 +2,11 @@
 /* Course Mercator Straight
  * A straight line on the mercator map
  */
-function CourseMercatorStraight(ll0, ll1, lfl2cv) {
+function CourseMercatorStraight(ll0, ll1, lfl2cv, style) {
   this.ll0 = ll0;
   this.ll1 = ll1;
   this.lfl2cv = lfl2cv;
+  this.style = style || { strokeStyle: "#000000" , lineDash: [] };
 }
 CourseMercatorStraight.prototype = {
   draw : function(ctx) {
@@ -17,7 +18,8 @@ CourseMercatorStraight.prototype = {
     ctx.beginPath();
     ctx.moveTo(cv0[0], cv0[1]);
     ctx.lineTo(cv1[0], cv1[1]);
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = this.style.strokeStyle;
+    ctx.setLineDash(this.style.lineDash);
     ctx.stroke();
 
     for(var cv of [cv0,cv1]) {
@@ -26,6 +28,7 @@ CourseMercatorStraight.prototype = {
       ctx.fillStyle = "red";
       ctx.fill();
     }
+    //debug("CourseMercatorStraight: distSqr: " + Planar.distanceSqr(cv0[0],cv0[1],cv1[0],cv1[1]));
   },
   move : function(point, ll) {
     if("ll0" == point) {
